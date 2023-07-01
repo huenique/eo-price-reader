@@ -1,20 +1,22 @@
+import dataclasses
 import io
 import json
 import os
 import typing
 
 import rel
-import websocket
 from dotenv import load_dotenv
+from indicators import relative_strength_index
+from utils import candle_parser
 from websocket._app import WebSocketApp
 
 
-def on_message(ws: WebSocketApp, message: bytes, msg_io: io.TextIOWrapper) -> None:
-    # decode the message and save to a file using msg_io
-    msg = json.loads(message)
-    if msg["action"] == "candles":
-        msg_io.write(str(msg) + "\n")
-        msg_io.flush()
+def on_message(
+    ws: WebSocketApp,
+    message: bytes,
+    strategy_handler: typing.Callable[[typing.Any], typing.Any],
+) -> None:
+    strategy_handler(message)
 
 
 def on_error(ws: WebSocketApp, error: str) -> None:
@@ -244,17 +246,24 @@ def on_open(ws: WebSocketApp, token: str) -> None:
         ws.send(json.dumps(message))
 
 
-def main(url: str, token: str, msg_io: io.TextIOWrapper) -> None:
-    websocket.enableTrace(True)  # type: ignore
+@dataclasses.dataclass
+class MainArgs:
+    url: str
+    token: str
+    on_message_strategy: typing.Callable[[bytes], typing.Any]
 
+
+def main(
+    main_args: MainArgs,
+) -> None:
     def _on_open(ws: WebSocketApp) -> None:
-        return on_open(ws, token)
+        return on_open(ws, main_args.token)
 
     def _on_message(ws: WebSocketApp, message: bytes) -> None:
-        return on_message(ws, message, msg_io)
+        return on_message(ws, message, main_args.on_message_strategy)
 
     ws = WebSocketApp(
-        url,
+        main_args.url,
         on_open=_on_open,
         on_message=_on_message,
         on_error=on_error,
@@ -266,14 +275,77 @@ def main(url: str, token: str, msg_io: io.TextIOWrapper) -> None:
     rel.dispatch()  # type: ignore
 
 
+# ----------------- Custom Strategy -----------------
+CandleSeries = list[dict[str, float | list[float]]]
+CandleExpTimes = list[list[int | list[list[float | int]]]]
+CandleMessage = dict[str, int | CandleSeries | CandleExpTimes]
+CandleData = dict[str, str | CandleMessage]
+
+
+@dataclasses.dataclass
+class CandleChartContainer:
+    """A container for candle chart data.
+
+    Attributes:
+        candles (list[float]): The candle chart data.
+    """
+
+    candles: list[CandleData]
+
+
+@dataclasses.dataclass
+class RSIParams:
+    """A container for Relative Strength Index parameters.
+
+    Attributes:
+        period (int): The period.
+        overbought (int): The overbought value.
+        oversold (int): The oversold value.
+    """
+
+    period: int
+    overbought: int
+    oversold: int
+
+
+def analyze_candles(chartContainer: CandleChartContainer, rsiParams: RSIParams) -> None:
+    candles: list[list[float]] = []
+    for candle_datum in chartContainer.candles:
+        candles.append(candle_parser.parse_candles_data(candle_datum))
+
+    rsi = relative_strength_index.calculate_rsi(candles, rsiParams.period)
+    result = relative_strength_index.analyze_rsi(
+        rsi, rsiParams.overbought, rsiParams.oversold
+    )
+    print(f"RSI: {rsi:.2f}, {result}")
+    print("-" * 50)
+
+
+def my_strategy(
+    message: bytes,
+    chartContainer: CandleChartContainer,
+    period: int,
+    rsiParams: RSIParams,
+    msg_io: io.TextIOWrapper | None = None,
+):
+    parsed_msg = json.loads(message)
+    if parsed_msg["action"] == "candles":
+        chartContainer.candles.append(parsed_msg)
+
+        if len(chartContainer.candles) >= (period * 2):
+            chartContainer.candles = chartContainer.candles[period - 1 :]
+
+        if msg_io is not None:
+            msg_io.write(str(parsed_msg) + "\n")
+            msg_io.flush()
+
+    analyze_candles(chartContainer, rsiParams)
+
+
 if __name__ == "__main__":
     load_dotenv()
     eo_url = os.getenv("EO_URL")
     eo_token = os.getenv("EO_TOKEN")
-
-    # Open a reusable file object and redirect stdout there so that we can store ws
-    # messages for later
-    msg_io = open("output.txt", "w")
 
     try:
         assert eo_url is not None and eo_url != ""
@@ -281,8 +353,23 @@ if __name__ == "__main__":
     except AssertionError as e:
         raise ValueError("Please set EO_URL and EO_TOKEN environment variables") from e
 
+    # Open a reusable file object and redirect stdout there so that we can store ws
+    # messages for later
+    # msg_io = open("output.txt", "w")
+    period = 14
+    chartContainer = CandleChartContainer(candles=[])
+    rsiParams = RSIParams(period=period, overbought=70, oversold=30)
+
     main(
-        url=eo_url,
-        token=eo_token,
-        msg_io=msg_io,
+        MainArgs(
+            url=eo_url,
+            token=eo_token,
+            on_message_strategy=lambda message: my_strategy(
+                message,
+                chartContainer,
+                period,
+                rsiParams,
+                # msg_io,
+            ),
+        )
     )

@@ -10,61 +10,84 @@ also be used to identify the general trend.
 """
 
 
-def calculate_rsi(candles: list[float], period: int) -> list[float]:
-    """Calculate the RSI values. It iterates over the candlestick data, updates the
-    average gain and loss for each period, and calculates the RSI value for each data
-    point.
+def calculate_average_price_change(price_changes: list[float]):
+    upward_changes = [change for change in price_changes if change > 0]
+    downward_changes = [abs(change) for change in price_changes if change < 0]
 
-    Args:
-        data (list[float]): Candlestick data for the RSI calculation (e.g. close prices)
-        period (int): The period for the RSI calculation (e.g. 14)
-    """
-    rsi_values: list[float] = []
-    gain_values: list[float] = []
-    loss_values: list[float] = []
+    average_upward_change = (
+        sum(upward_changes) / len(upward_changes) if len(upward_changes) > 0 else 0
+    )
+    average_downward_change = (
+        abs(sum(downward_changes)) / len(downward_changes)
+        if len(downward_changes) > 0
+        else 0
+    )
 
-    for i in range(1, len(candles)):
-        change = candles[i] - candles[i - 1]
-        if change >= 0:
-            gain_values.append(change)
-            loss_values.append(0)
-        else:
-            gain_values.append(0)
-            loss_values.append(abs(change))
-
-        if i >= period:
-            avg_gain = sum(gain_values[-period:]) / period
-            avg_loss = sum(loss_values[-period:]) / period
-            rs = avg_gain / avg_loss if avg_loss != 0 else 0
-            rsi = 100 - (100 / (1 + rs))
-            rsi_values.append(rsi)
-
-    return rsi_values
+    return average_upward_change, average_downward_change
 
 
-def analyze_rsi(rsi_values: list[float], overbought_level: int, oversold_level: int):
-    """Analyze each RSI value by comparing it to the overbought and oversold levels.
+def calculate_rsi(candlestick_data: list[list[float]], period: int) -> float:
+    if len(candlestick_data) < period:
+        raise ValueError(
+            (
+                "Insufficient data for the specified period: "
+                f"{len(candlestick_data)} candlesticks."
+            )
+        )
 
-    Args:
-        rsi_values (list[float]): The RSI values to analyze (e.g. [70.0, 30.0, 50.0])
-        overbought_level (int): The overbought level (e.g. 70)
-        oversold_level (int): The oversold level (e.g. 30)
-    """
-    for rsi in rsi_values:
-        if rsi >= overbought_level:
-            print(f"RSI is overbought: {rsi}")
-        elif rsi <= oversold_level:
-            print(f"RSI is oversold: {rsi}")
-        else:
-            print(f"RSI is within normal range: {rsi}")
+    price_changes: list[float] = []
+    for i in range(1, len(candlestick_data)):
+        current_close = candlestick_data[i][4]
+        previous_close = candlestick_data[i - 1][4]
+        price_change = current_close - previous_close
+        price_changes.append(price_change)
+
+    # Consider only the last 'period' price changes
+    price_changes = price_changes[-period:]
+
+    average_upward_change, average_downward_change = calculate_average_price_change(
+        price_changes
+    )
+    rsi = 100 - (100 / (1 + (average_upward_change / average_downward_change)))
+
+    return rsi
+
+
+def analyze_rsi(rsi: float, overbought_level: float, oversold_level: float) -> str:
+    if rsi > overbought_level:
+        return "overbought"
+    elif rsi < oversold_level:
+        return "oversold"
+    else:
+        return "neutral"
 
 
 if __name__ == "__main__":
     # Example usage
-    candles = [30468.708, 30468.705, 30468.707, 30468.709, 30468.708]
+    candles = [
+        [30432.875, 30432.856, 30432.91, 30432.856, 30432.875],
+        [30432.717, 30432.856, 30432.91, 30432.717, 30432.717],
+        [30432.731, 30432.856, 30432.91, 30432.717, 30432.731],
+        [30432.975, 30432.856, 30432.975, 30432.717, 30432.975],
+        [30432.997, 30432.856, 30432.997, 30432.717, 30432.997],
+        [30433.045, 30432.856, 30433.045, 30432.717, 30433.045],
+        [30433.248, 30432.856, 30433.248, 30432.717, 30433.248],
+        [30433.251, 30432.856, 30433.251, 30432.717, 30433.251],
+        [30433.26, 30433.26, 30433.26, 30433.26, 30433.26],
+        [30433.447, 30433.26, 30433.447, 30433.26, 30433.447],
+        [30433.423, 30433.26, 30433.447, 30433.26, 30433.423],
+        [30433.423, 30433.26, 30433.447, 30433.26, 30433.423],
+        [30433.39, 30433.26, 30433.447, 30433.26, 30433.39],
+        [30433.39, 30433.26, 30433.447, 30433.26, 30433.39],
+        [30433.39, 30433.26, 30433.447, 30433.26, 30433.39],
+        [30433.697, 30433.26, 30433.697, 30433.26, 30433.697],
+        [30433.697, 30433.26, 30433.697, 30433.26, 30433.697],
+        [30433.696, 30433.26, 30433.697, 30433.26, 30433.696],
+    ]
     period = 14
-    overbought_level = 70
-    oversold_level = 30
+    overbought_level = 50
+    oversold_level = 50
 
-    rsi_values = calculate_rsi(candles, period)
-    analyze_rsi(rsi_values, overbought_level, oversold_level)
+    rsi = calculate_rsi(candles, period)
+    result = analyze_rsi(rsi, overbought_level, oversold_level)
+    print(f"RSI: {rsi}, Result: {result}")
