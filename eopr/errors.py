@@ -1,4 +1,9 @@
-from typing import Any, Callable
+import typing
+
+OriginalFunction = typing.Callable[..., typing.Any]
+CallbackFunction = typing.Callable[[Exception], typing.Any]
+Wrapper = typing.Callable[..., typing.Any]
+Decorator = typing.Callable[[Wrapper], Wrapper]
 
 
 class EoprError(Exception):
@@ -15,11 +20,9 @@ def default_error_callback(e: Exception):
     raise EoprError(e) from e
 
 
-def error_handler(
-    callback: Callable[[Exception], Any]
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
-    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
+def error_handler(callback: CallbackFunction) -> Decorator:
+    def decorator(func: OriginalFunction) -> Wrapper:
+        def wrapper(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
             try:
                 return func(*args, **kwargs)
             except Exception as e:
