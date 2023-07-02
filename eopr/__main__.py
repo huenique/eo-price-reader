@@ -6,9 +6,10 @@ import typing
 
 import rel
 from dotenv import load_dotenv
-from indicators import relative_strength_index
 from utils import candle_parser
 from websocket._app import WebSocketApp
+
+from eopr.indicators import rsi
 
 
 def on_message(
@@ -224,7 +225,10 @@ def on_open(ws: WebSocketApp, token: str) -> None:
         {
             "action": "registerNewDeviceToken",
             "message": {
-                "token": "exdJ08q9E2amowx2SrYcUd:APA91bHZOcoRT4nHvDn8lXRKYAwdJr7kXh249YGsmEU4vcp6xaIUNexCQNjwe7RgEICE_COmcpT2ZCGTgt7-7MVFId84IqI_EsPGlkVl7YCm3LnVkHM8_fIuCsfcpQb7zfG3xNEOvbtD",
+                "token": (
+                    "exdJ08q9E2amowx2SrYcUd:"
+                    "APA91bHZOcoRT4nHvDn8lXRKYAwdJr7kXh249YGsmEU4vcp6xaIUNexCQNjwe7RgEICE_COmcpT2ZCGTgt7-7MVFId84IqI_EsPGlkVl7YCm3LnVkHM8_fIuCsfcpQb7zfG3xNEOvbtD"
+                ),
                 "token_type": "web_fcm",
             },
             "token": token,
@@ -313,10 +317,8 @@ def analyze_candles(chartContainer: CandleChartContainer, rsiParams: RSIParams) 
     for candle_datum in chartContainer.candles:
         candles.append(candle_parser.parse_candles_data(candle_datum))
 
-    rsi = relative_strength_index.calculate_rsi(candles, rsiParams.period)
-    result = relative_strength_index.analyze_rsi(
-        rsi, rsiParams.overbought, rsiParams.oversold
-    )
+    rsi_ = rsi.calculate_rsi(candles, rsiParams.period)
+    result = rsi.analyze_rsi(rsi_, rsiParams.overbought, rsiParams.oversold)
     print(f"RSI: {rsi:.2f}, {result}")
     print("-" * 50)
 
