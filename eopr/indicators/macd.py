@@ -1,6 +1,6 @@
 import dataclasses
 
-from common import CandlePrice, FloatArray
+from common import CandlePrice, FloatArray, TrendAnalysis
 
 MACDLine = FloatArray
 SignalLine = FloatArray
@@ -21,7 +21,7 @@ class MACDIndicator:
     macd_line: MACDLine
     signal_line: SignalLine
     histogram: Histogram
-    interpretation: Interpretation | None = None
+    analysis: TrendAnalysis | None = None
 
 
 def ema(prices: FloatArray, period: int) -> FloatArray:
@@ -95,7 +95,11 @@ def interpret_macd(macd: MACDIndicator) -> MACDIndicator:
     else:
         trend += " The histogram is falling, indicating increasing bearish momentum."
 
-    macd.interpretation = trend
+    macd.analysis = TrendAnalysis(
+        bullish=macd_trend == "rising",
+        bearish=macd_trend == "falling",
+        interpretation=trend,
+    )
 
     return macd
 
@@ -128,4 +132,4 @@ if __name__ == "__main__":
     macd_params = MACDParameters(prices=prices, fast=fast, slow=slow, signal=signal)
     macd_indicator = macd(macd_params)
     macd_indicator = interpret_macd(macd_indicator)
-    print(macd_indicator.interpretation)
+    print(macd_indicator)

@@ -1,8 +1,9 @@
 import dataclasses
 
-from common import CandlePrice, FloatArray
+from common import CandlePrice, FloatArray, TrendAnalysis
 
 RSIValues = FloatArray
+Interpretation = str
 
 
 @dataclasses.dataclass
@@ -11,7 +12,15 @@ class RSIParameters:
     period: int
 
 
-def rsi(rsi_params: RSIParameters) -> RSIValues:
+@dataclasses.dataclass
+class RSIIndicator:
+    rsi_values: RSIValues
+    overbought: float = 70
+    oversold: float = 30
+    analysis: TrendAnalysis | None = None
+
+
+def rsi(rsi_params: RSIParameters) -> RSIIndicator:
     close_prices = [candle[4] for candle in rsi_params.prices]
     changes = [
         close_prices[i] - close_prices[i - 1] for i in range(1, len(close_prices))
@@ -29,24 +38,41 @@ def rsi(rsi_params: RSIParameters) -> RSIValues:
         rsi = 100 - (100 / (1 + rs))
         rsi_values.append(rsi)
 
-    return rsi_values
+    return RSIIndicator(rsi_values=rsi_values)
 
 
-def interpret_rsi(rsi_values: RSIValues, overbought: float, oversold: float) -> str:
-    last_rsi = rsi_values[-1]
-    if last_rsi > overbought:
-        return (
-            f"The RSI value is {last_rsi:.2f}, indicating that the asset is overbought."
+def interpret_rsi(rsi_indicator: RSIIndicator) -> RSIIndicator:
+    last_rsi = rsi_indicator.rsi_values[-1]
+    if last_rsi > rsi_indicator.overbought:
+        rsi_indicator.analysis = TrendAnalysis(
+            bullish=False,
+            bearish=True,
+            interpretation=(
+                f"The RSI value is {last_rsi:.2f}, "
+                "indicating that the asset is overbought."
+            ),
         )
-    elif last_rsi < oversold:
-        return (
-            f"The RSI value is {last_rsi:.2f}, indicating that the asset is oversold."
+        return rsi_indicator
+    elif last_rsi < rsi_indicator.oversold:
+        rsi_indicator.analysis = TrendAnalysis(
+            bullish=True,
+            bearish=False,
+            interpretation=(
+                f"The RSI value is {last_rsi:.2f}, "
+                "indicating that the asset is oversold."
+            ),
         )
+        return rsi_indicator
     else:
-        return (
-            f"The RSI value is {last_rsi:.2f}, indicating that the asset is neither"
-            " overbought nor oversold."
+        rsi_indicator.analysis = TrendAnalysis(
+            bullish=False,
+            bearish=False,
+            interpretation=(
+                f"The RSI value is {last_rsi:.2f}, "
+                "indicating that the asset is neither overbought nor oversold."
+            ),
         )
+        return rsi_indicator
 
 
 if __name__ == "__main__":
@@ -71,6 +97,8 @@ if __name__ == "__main__":
         [30433.696, 30433.26, 30433.697, 30433.26, 30433.696],
     ]
     rsi_params = RSIParameters(prices, 14)
-    rsi_values = rsi(rsi_params)
-    rsi_interpretation = interpret_rsi(rsi_values, 70, 30)
+    rsi_indicator = rsi(rsi_params)
+    rsi_indicator.overbought = 70
+    rsi_indicator.oversold = 30
+    rsi_interpretation = interpret_rsi(rsi_indicator)
     print(rsi_interpretation)
