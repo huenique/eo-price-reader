@@ -27,36 +27,20 @@ class CandleChartContainer:
     candles: list[CandleData]
 
 
-@dataclasses.dataclass
-class RSIParams:
-    """A container for Relative Strength Index parameters.
-
-    Attributes:
-        period (int): The period.
-        overbought (int): The overbought value.
-        oversold (int): The oversold value.
-    """
-
-    period: int
-    overbought: int
-    oversold: int
-
-
-def analyze_candles(chartContainer: CandleChartContainer, rsiParams: RSIParams) -> None:
+def analyze_candles(
+    chartContainer: CandleChartContainer, rsiParams: rsi.RSIParameters
+) -> None:
     candles: list[list[float]] = []
     for candle_datum in chartContainer.candles:
         candles.append(candle_parser.parse_candles_data(candle_datum))
 
-    rsi_ = rsi.rsi(
-        rsi.RSIParameters(
-            prices=candles,
-            period=rsiParams.period,
-        )
-    )
-    rsi_.overbought = rsiParams.overbought
-    rsi_.oversold = rsiParams.oversold
+    rsiParams.prices = candles
+    rsi_ = rsi.rsi(rsiParams)
+    rsi_.overbought = 70
+    rsi_.oversold = 30
     result = rsi.interpret_rsi(rsi_)
-    print(result)
+
+    print(result.model_dump_json())
     print("-" * 50)
 
 
@@ -64,7 +48,7 @@ def my_strategy(
     message: bytes,
     chartContainer: CandleChartContainer,
     period: int,
-    rsiParams: RSIParams,
+    rsiParams: rsi.RSIParameters,
     msg_io: io.TextIOWrapper | None = None,
 ):
     parsed_msg = json.loads(message)
@@ -97,7 +81,7 @@ if __name__ == "__main__":
     # msg_io = open("output.txt", "w")
     period = 14
     chartContainer = CandleChartContainer(candles=[])
-    rsiParams = RSIParams(period=period, overbought=70, oversold=30)
+    rsiParams = rsi.RSIParameters(prices=[], period=period)
 
     eopr.reader(
         eopr.ReaderParams(

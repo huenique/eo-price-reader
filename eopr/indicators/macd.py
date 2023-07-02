@@ -1,5 +1,6 @@
-import dataclasses
 import typing
+
+import pydantic
 
 from .. import errors
 from .common import CandlePrice, FloatArray, TrendAnalysis
@@ -10,22 +11,24 @@ Histogram = FloatArray
 Interpretation = str
 
 
-@dataclasses.dataclass
-class MACDParameters:
+class MACDParameters(pydantic.BaseModel):
     prices: list[CandlePrice]
     fast: int
     slow: int
     signal: int
-    err_handler: typing.Callable[[Exception], None] | None = None
+    err_handler: typing.Callable[[Exception], None] = pydantic.Field(
+        default=errors.default_error_callback, exclude=True
+    )
 
 
-@dataclasses.dataclass
-class MACDIndicator:
+class MACDIndicator(pydantic.BaseModel):
     macd_line: MACDLine
     signal_line: SignalLine
     histogram: Histogram
     analysis: TrendAnalysis
-    err_handler: typing.Callable[[Exception], None] | None = None
+    err_handler: typing.Callable[[Exception], None] = pydantic.Field(
+        default=errors.default_error_callback, exclude=True
+    )
 
 
 def ema(prices: FloatArray, period: int) -> FloatArray:
@@ -38,11 +41,7 @@ def ema(prices: FloatArray, period: int) -> FloatArray:
 
 
 def macd(macd_params: MACDParameters) -> MACDIndicator:
-    @errors.error_handler(
-        macd_params.err_handler
-        if macd_params.err_handler
-        else errors.default_error_callback
-    )
+    @errors.error_handler(macd_params.err_handler)
     def _macd(macd_params: MACDParameters):
         close_prices = [candle[4] for candle in macd_params.prices]
         macd_line = [
@@ -90,9 +89,7 @@ def interpret_macd(macd: MACDIndicator) -> MACDIndicator:
         str: The interpretation of the MACD indicator.
     """
 
-    @errors.error_handler(
-        macd.err_handler if macd.err_handler else errors.default_error_callback
-    )
+    @errors.error_handler(macd.err_handler)
     def _interpret_macd(macd: MACDIndicator):
         macd_trend = "rising" if macd.macd_line[-1] > macd.macd_line[-2] else "falling"
         signal_trend = (
@@ -159,4 +156,5 @@ def interpret_macd(macd: MACDIndicator) -> MACDIndicator:
 #     macd_params = MACDParameters(prices=prices, fast=fast, slow=slow, signal=signal)
 #     macd_indicator = macd(macd_params)
 #     macd_indicator = interpret_macd(macd_indicator)
+#     print(macd_indicator)
 #     print(macd_indicator)

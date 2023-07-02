@@ -1,5 +1,6 @@
-import dataclasses
 import typing
+
+import pydantic
 
 from .. import errors
 from .common import CandlePrice, FloatArray, TrendAnalysis
@@ -8,28 +9,26 @@ RSIValues = FloatArray
 Interpretation = str
 
 
-@dataclasses.dataclass
-class RSIParameters:
+class RSIParameters(pydantic.BaseModel):
     prices: list[CandlePrice]
     period: int
-    err_handler: typing.Callable[[Exception], None] | None = None
+    err_handler: typing.Callable[[Exception], None] = pydantic.Field(
+        default=errors.default_error_callback, exclude=True
+    )
 
 
-@dataclasses.dataclass
-class RSIIndicator:
+class RSIIndicator(pydantic.BaseModel):
     rsi_values: RSIValues
     overbought: float
     oversold: float
     analysis: TrendAnalysis
-    err_handler: typing.Callable[[Exception], None] | None = None
+    err_handler: typing.Callable[[Exception], None] = pydantic.Field(
+        default=errors.default_error_callback, exclude=True
+    )
 
 
 def rsi(rsi_params: RSIParameters) -> RSIIndicator:
-    @errors.error_handler(
-        rsi_params.err_handler
-        if rsi_params.err_handler
-        else errors.default_error_callback
-    )
+    @errors.error_handler(rsi_params.err_handler)
     def _rsi(rsi_params: RSIParameters):
         close_prices = [candle[4] for candle in rsi_params.prices]
         changes = [
@@ -64,11 +63,7 @@ def rsi(rsi_params: RSIParameters) -> RSIIndicator:
 
 
 def interpret_rsi(rsi_indicator: RSIIndicator) -> RSIIndicator:
-    @errors.error_handler(
-        rsi_indicator.err_handler
-        if rsi_indicator.err_handler
-        else errors.default_error_callback
-    )
+    @errors.error_handler(rsi_indicator.err_handler)
     def _interpret_rsi(rsi_indicator: RSIIndicator):
         last_rsi = rsi_indicator.rsi_values[-1]
         if last_rsi > rsi_indicator.overbought:
@@ -129,5 +124,7 @@ def interpret_rsi(rsi_indicator: RSIIndicator) -> RSIIndicator:
 #     rsi_indicator = rsi(rsi_params)
 #     rsi_indicator.overbought = 70
 #     rsi_indicator.oversold = 30
+#     rsi_interpretation = interpret_rsi(rsi_indicator)
+#     print(rsi_interpretation)
 #     rsi_interpretation = interpret_rsi(rsi_indicator)
 #     print(rsi_interpretation)
