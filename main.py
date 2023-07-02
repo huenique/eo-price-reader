@@ -27,6 +27,11 @@ class CandleChartContainer:
     candles: list[CandleData]
 
 
+# TODO: Implment strategy:
+# If the MACD line crosses the signal line (bullish or bearish) and if the RSI is
+# overbought (50) or oversold (50), then buy or sell respectively.
+
+
 def analyze_candles(
     chartContainer: CandleChartContainer, rsiParams: rsi.RSIParameters
 ) -> None:
@@ -36,18 +41,20 @@ def analyze_candles(
 
     rsiParams.prices = candles
     rsi_ = rsi.rsi(rsiParams)
-    rsi_.overbought = 70
-    rsi_.oversold = 30
+    rsi_.overbought = 50
+    rsi_.oversold = 50
     result = rsi.interpret_rsi(rsi_)
 
-    print(result.model_dump_json())
+    print(
+        f"{result.rsi_values[-1]:.2f}, "
+        f"{result.analysis.bearish=}, {result.analysis.bullish=}"
+    )
     print("-" * 50)
 
 
 def my_strategy(
     message: bytes,
     chartContainer: CandleChartContainer,
-    period: int,
     rsiParams: rsi.RSIParameters,
     msg_io: io.TextIOWrapper | None = None,
 ):
@@ -55,8 +62,9 @@ def my_strategy(
     if parsed_msg["action"] == "candles":
         chartContainer.candles.append(parsed_msg)
 
-        if len(chartContainer.candles) >= (period * 2):
-            chartContainer.candles = chartContainer.candles[period - 1 :]
+        # Prevent the list from growing too large
+        if len(chartContainer.candles) >= (rsiParams.period * 3):
+            chartContainer.candles = chartContainer.candles[rsiParams.period - 1 :]
 
         if msg_io is not None:
             msg_io.write(str(parsed_msg) + "\n")
@@ -90,7 +98,6 @@ if __name__ == "__main__":
             on_message_strategy=lambda message: my_strategy(
                 message,
                 chartContainer,
-                period,
                 rsiParams,
                 # msg_io,
             ),
