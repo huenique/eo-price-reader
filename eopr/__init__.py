@@ -93,80 +93,6 @@ def on_open(ws: WebSocketApp, token: str) -> None:
             "ns": 2,
         },
         {
-            "action": "setContext",
-            "message": {"is_demo": 1},
-            "token": token,
-            "ns": 1,
-        },
-        {
-            "action": "multipleAction",
-            "message": {
-                "actions": [
-                    {
-                        "action": "userGroup",
-                        "ns": 1,
-                        "token": token,
-                    },
-                    {
-                        "action": "profile",
-                        "ns": 2,
-                        "token": token,
-                    },
-                    {
-                        "action": "assets",
-                        "message": {
-                            "mode": ["vanilla"],
-                            "subscribeMode": ["vanilla"],
-                        },
-                        "ns": 3,
-                        "token": token,
-                    },
-                    {
-                        "action": "getCurrency",
-                        "ns": 4,
-                        "token": token,
-                    },
-                    {
-                        "action": "getCountries",
-                        "ns": 5,
-                        "token": token,
-                    },
-                    {
-                        "action": "environment",
-                        "ns": 6,
-                        "token": token,
-                    },
-                    {
-                        "action": "defaultSubscribeCandles",
-                        "message": {
-                            "modes": ["vanilla"],
-                            "timeframes": [0, 5],
-                        },
-                        "ns": 7,
-                        "token": token,
-                    },
-                    {
-                        "action": "setTimeZone",
-                        "message": {"timeZone": 480},
-                        "ns": 8,
-                        "token": token,
-                    },
-                    {
-                        "action": "getCandlesTimeframes",
-                        "ns": 9,
-                        "token": token,
-                    },
-                    {
-                        "action": "referralOfferInfo",
-                        "ns": 10,
-                        "token": token,
-                    },
-                ]
-            },
-            "token": token,
-            "ns": 2,
-        },
-        {
             "action": "pong",
             "message": {"data": "1688169369371"},
             "token": token,
@@ -227,16 +153,6 @@ def on_open(ws: WebSocketApp, token: str) -> None:
             },
             "token": token,
             "ns": 7,
-        },
-        {
-            "action": "assetHistoryCandles",
-            "message": {
-                "assetid": 160,
-                "periods": [[1688165120, 1688170235]],
-                "timeframes": [5],
-            },
-            "token": token,
-            "ns": 8,
         },
     ]
 

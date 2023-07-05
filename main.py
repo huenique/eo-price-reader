@@ -44,10 +44,10 @@ class CandleChartContainer:
 
 
 def analyze_candles(
-    chartContainer: CandleChartContainer, rsi_params: rsi.RSIParameters
+    chart_container: CandleChartContainer, rsi_params: rsi.RSIParameters
 ) -> None:
     candles: list[list[float]] = []
-    for candle_datum in chartContainer.candles:
+    for candle_datum in chart_container.candles:
         candles.append(candle_parser.parse_candles_data(candle_datum))
 
     rsi_params.prices = candles
@@ -64,9 +64,16 @@ def analyze_candles(
 
     # Using built-in strategy
     trade_signal = macd_rsi_crossover.trade(rsi_, macd_)
+    chart_container.signal.buy = trade_signal.buy
+    chart_container.signal.sell = trade_signal.sell
+
+    if trade_signal.buy:
+        print("BUY")
 
     print("\033c", end="")
+    print("-" * 80)
     print("Buy" if trade_signal.buy else "Sell" if trade_signal.sell else "---")
+    print("-" * 80)
 
 
 def my_strategy(
@@ -105,8 +112,8 @@ if __name__ == "__main__":
     # messages for later
     # msg_io = open("output.txt", "w")
     signal = Signal(buy=False, sell=False)
-    chartContainer = CandleChartContainer(signal=signal, candles=[])
-    rsiParams = rsi.RSIParameters(prices=[], period=14)
+    chart_container = CandleChartContainer(signal=signal, candles=[])
+    rsi_params = rsi.RSIParameters(prices=[], period=14)
 
     eopr.reader(
         eopr.ReaderParams(
@@ -114,8 +121,8 @@ if __name__ == "__main__":
             token=eo_token,
             on_message_strategy=lambda message: my_strategy(
                 message,
-                chartContainer,
-                rsiParams,
+                chart_container,
+                rsi_params,
                 # msg_io,
             ),
         )
