@@ -1,7 +1,7 @@
-import dataclasses
 import json
 import typing
 
+import pydantic
 import rel
 from websocket._app import WebSocketApp
 
@@ -9,9 +9,9 @@ from websocket._app import WebSocketApp
 def on_message(
     ws: WebSocketApp,
     message: bytes,
-    strategy_handler: typing.Callable[[typing.Any], typing.Any],
+    strategy_handler: typing.Callable[[WebSocketApp, typing.Any], typing.Any],
 ) -> None:
-    strategy_handler(message)
+    strategy_handler(ws, message)
 
 
 def on_error(ws: WebSocketApp, error: str) -> None:
@@ -160,14 +160,13 @@ def on_open(ws: WebSocketApp, token: str) -> None:
         ws.send(json.dumps(message))
 
 
-@dataclasses.dataclass
-class ReaderParams:
+class ReaderParams(pydantic.BaseModel):
     url: str
     token: str
-    on_message_strategy: typing.Callable[[bytes], typing.Any]
+    on_message_strategy: typing.Callable[[WebSocketApp, bytes], typing.Any]
 
 
-def reader(
+def read(
     main_args: ReaderParams,
 ) -> None:
     def _on_open(ws: WebSocketApp) -> None:
