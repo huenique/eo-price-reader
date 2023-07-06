@@ -1,3 +1,4 @@
+import datetime
 import json
 import typing
 
@@ -22,7 +23,7 @@ def on_close(ws: WebSocketApp, close_status_code: str, close_msg: str) -> None:
     print(f"Closed: {close_msg=}, {close_status_code=}")
 
 
-def on_open(ws: WebSocketApp, token: str) -> None:
+def on_open(ws: WebSocketApp, token: str, asset_id: int) -> None:
     messages: typing.Any = [
         {
             "action": "setContext",
@@ -154,6 +155,21 @@ def on_open(ws: WebSocketApp, token: str) -> None:
             "token": token,
             "ns": 7,
         },
+        {
+            "action": "assetHistoryCandles",
+            "message": {
+                "assetid": asset_id,
+                "periods": [
+                    [
+                        int(datetime.datetime.now().timestamp()),
+                        int(datetime.datetime.now().timestamp()) + 5400,
+                    ]
+                ],
+                "timeframes": [5],
+            },
+            "token": "add8a170cadb1e0b90582c4e101116d4",
+            "ns": 8,
+        },
     ]
 
     for message in messages:
@@ -163,6 +179,7 @@ def on_open(ws: WebSocketApp, token: str) -> None:
 class ReaderParams(pydantic.BaseModel):
     url: str
     token: str
+    asset_id: int
     on_message_strategy: typing.Callable[[WebSocketApp, bytes], typing.Any]
 
 
@@ -170,7 +187,7 @@ def read(
     main_args: ReaderParams,
 ) -> None:
     def _on_open(ws: WebSocketApp) -> None:
-        return on_open(ws, main_args.token)
+        return on_open(ws, main_args.token, main_args.asset_id)
 
     def _on_message(ws: WebSocketApp, message: bytes) -> None:
         return on_message(ws, message, main_args.on_message_strategy)
