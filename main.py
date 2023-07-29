@@ -1,4 +1,5 @@
 import dataclasses
+import datetime
 import io
 import json
 import os
@@ -37,14 +38,20 @@ class CandleChartContainer:
     Attributes:
         candles (list[float]): The candle chart data.
         signal (Signal): The signal for a buy or sell action.
+        strike_time (datetime.date): The strike time.
+        expiration_time (datetime.date): The expiration time.
     """
 
     candles: list[CandleData]
     signal: Signal
+    strike_time: datetime.date | None = None
+    expiration_time: datetime.date | None = None
 
 
 def analyze_candles(
-    chart_container: CandleChartContainer, rsi_params: rsi.RSIParameters
+    ws: eopr.WebSocketApp,
+    chart_container: CandleChartContainer,
+    rsi_params: rsi.RSIParameters,
 ) -> None:
     candles: list[list[float]] = []
     for candle_datum in chart_container.candles:
@@ -52,8 +59,8 @@ def analyze_candles(
 
     rsi_params.prices = candles
     rsi_ = rsi.rsi(rsi_params)
-    rsi_.overbought = 50
-    rsi_.oversold = 50
+    rsi_.overbought = 70
+    rsi_.oversold = 30
     macd_params = macd.MACDParameters(
         prices=candles,
         fast=12,
@@ -66,17 +73,11 @@ def analyze_candles(
     trade_signal = macd_rsi_crossover.trade(rsi_, macd_)
     chart_container.signal.buy = trade_signal.buy
     chart_container.signal.sell = trade_signal.sell
-
-    if trade_signal.buy:
-        print("BUY")
-
-    print("\033c", end="")
-    print("-" * 80)
     print("Buy" if trade_signal.buy else "Sell" if trade_signal.sell else "---")
-    print("-" * 80)
 
 
 def my_strategy(
+    ws: eopr.WebSocketApp,
     message: bytes,
     chart_container: CandleChartContainer,
     rsi_params: rsi.RSIParameters,
@@ -94,17 +95,19 @@ def my_strategy(
             msg_io.write(str(parsed_msg) + "\n")
             msg_io.flush()
 
-    analyze_candles(chart_container, rsi_params)
+    analyze_candles(ws, chart_container, rsi_params)
 
 
 if __name__ == "__main__":
     load_dotenv()
     eo_url = os.getenv("EO_URL")
     eo_token = os.getenv("EO_TOKEN")
+    eo_asset_id = os.getenv("EO_ASSET_ID")
 
     try:
         assert eo_url is not None and eo_url != ""
         assert eo_token is not None and eo_token != ""
+        assert eo_asset_id is not None and eo_asset_id != ""
     except AssertionError as e:
         raise ValueError("Please set EO_URL and EO_TOKEN environment variables") from e
 
@@ -112,14 +115,18 @@ if __name__ == "__main__":
     # messages for later
     # msg_io = open("output.txt", "w")
     signal = Signal(buy=False, sell=False)
-    chart_container = CandleChartContainer(signal=signal, candles=[])
+    chart_container = CandleChartContainer(
+        signal=signal, candles=[], strike_time=None, expiration_time=None
+    )
     rsi_params = rsi.RSIParameters(prices=[], period=14)
 
-    eopr.reader(
+    eopr.read(
         eopr.ReaderParams(
             url=eo_url,
             token=eo_token,
-            on_message_strategy=lambda message: my_strategy(
+            asset_id=int(eo_asset_id),
+            on_message_strategy=lambda ws, message: my_strategy(
+                ws,
                 message,
                 chart_container,
                 rsi_params,
