@@ -23,7 +23,7 @@ def on_close(ws: WebSocketApp, close_status_code: str, close_msg: str) -> None:
     print(f"Closed: {close_msg=}, {close_status_code=}")
 
 
-def on_open(ws: WebSocketApp, token: str, asset_id: int) -> None:
+def on_open(ws: WebSocketApp, token: str, device_token: str, asset_id: int) -> None:
     messages: typing.Any = [
         {
             "action": "setContext",
@@ -146,10 +146,7 @@ def on_open(ws: WebSocketApp, token: str, asset_id: int) -> None:
         {
             "action": "registerNewDeviceToken",
             "message": {
-                "token": (
-                    "exdJ08q9E2amowx2SrYcUd:"
-                    "APA91bHZOcoRT4nHvDn8lXRKYAwdJr7kXh249YGsmEU4vcp6xaIUNexCQNjwe7RgEICE_COmcpT2ZCGTgt7-7MVFId84IqI_EsPGlkVl7YCm3LnVkHM8_fIuCsfcpQb7zfG3xNEOvbtD"
-                ),
+                "token": device_token,
                 "token_type": "web_fcm",
             },
             "token": token,
@@ -167,7 +164,7 @@ def on_open(ws: WebSocketApp, token: str, asset_id: int) -> None:
                 ],
                 "timeframes": [5],
             },
-            "token": "add8a170cadb1e0b90582c4e101116d4",
+            "token": token,
             "ns": 8,
         },
     ]
@@ -179,6 +176,7 @@ def on_open(ws: WebSocketApp, token: str, asset_id: int) -> None:
 class ReaderParams(pydantic.BaseModel):
     url: str
     token: str
+    device_token: str
     asset_id: int
     on_message_strategy: typing.Callable[[WebSocketApp, bytes], typing.Any]
 
@@ -187,7 +185,7 @@ def read(
     main_args: ReaderParams,
 ) -> None:
     def _on_open(ws: WebSocketApp) -> None:
-        return on_open(ws, main_args.token, main_args.asset_id)
+        return on_open(ws, main_args.token, main_args.device_token, main_args.asset_id)
 
     def _on_message(ws: WebSocketApp, message: bytes) -> None:
         return on_message(ws, message, main_args.on_message_strategy)
