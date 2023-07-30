@@ -16,7 +16,7 @@ class EoprError(Exception):
         return str(self.e)
 
 
-def default_error_callback(e: Exception):
+def default_error_callback(e: Exception) -> typing.NoReturn:
     raise EoprError(e) from e
 
 
