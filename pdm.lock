@@ -110,11 +110,6 @@ requires_python = ">=3.8"
 summary = "Read key-value pairs from a .env file and set them as environment variables"
 
 [[package]]
-name = "rel"
-version = "0.4.9"
-summary = "Registered Event Listener. Provides standard (pyevent) interface and functionality without external dependencies"
-
-[[package]]
 name = "ruff"
 version = "0.0.280"
 requires_python = ">=3.7"
@@ -142,7 +137,7 @@ summary = "WebSocket client for Python with low level API options"
 lock_version = "4.2"
 cross_platform = true
 groups = ["default", "dev"]
-content_hash = "sha256:a5781b214999bdb7064787dcb646b6c9da44c30f03ad14c07af740bc3a60a57f"
+content_hash = "sha256:7a576e5265cfd2b12368cf8a4d75445d959a088dece50fbd686545dff32a0ee9"
 
 [metadata.files]
 "annotated-types 0.5.0" = [
@@ -319,9 +314,6 @@ content_hash = "sha256:a5781b214999bdb7064787dcb646b6c9da44c30f03ad14c07af740bc3
 "python-dotenv 1.0.0" = [
     {url = "https://files.pythonhosted.org/packages/31/06/1ef763af20d0572c032fa22882cfbfb005fba6e7300715a37840858c919e/python-dotenv-1.0.0.tar.gz", hash = "sha256:a8df96034aae6d2d50a4ebe8216326c61c3eb64836776504fcca410e5937a3ba"},
     {url = "https://files.pythonhosted.org/packages/44/2f/62ea1c8b593f4e093cc1a7768f0d46112107e790c3e478532329e434f00b/python_dotenv-1.0.0-py3-none-any.whl", hash = "sha256:f5971a9226b701070a4bf2c38c89e5a3f0d64de8debda981d1db98583009122a"},
-]
-"rel 0.4.9" = [
-    {url = "https://files.pythonhosted.org/packages/f9/5d/926f5946fbb672a4e03e6079e6c6c4a1634f53d3495e9ffed51efc4b7bd8/rel-0.4.9-py2.py3-none-any.whl", hash = "sha256:bcb28f9d4336ea01b57970ba3704dac43ccf236f50d8c95c59ad90cee03db0ab"},
 ]
 "ruff 0.0.280" = [
     {url = "https://files.pythonhosted.org/packages/02/e0/d938bac9685633d642b84cf00fe48ff5e2b323c1a2b6bb53eccf4bbd74b9/ruff-0.0.280-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:7a37dab70114671d273f203268f6c3366c035fe0c8056614069e90a65e614bfc"},

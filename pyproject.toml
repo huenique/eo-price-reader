@@ -6,7 +6,6 @@ description = ""
 authors = [{ name = "Hju Kneyck Flores", email = "hjucode@gmail.com" }]
 dependencies = [
     "websocket-client>=1.6.1",
-    "rel>=0.4.9",
     "python-dotenv>=1.0.0",
     "pydantic>=2.0",
 ]

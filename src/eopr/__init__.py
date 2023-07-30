@@ -3,7 +3,6 @@ import json
 import typing
 
 import pydantic
-import rel
 from websocket._app import WebSocketApp
 
 
@@ -198,6 +197,4 @@ def read(
         on_close=on_close,
     )
 
-    ws.run_forever(dispatcher=rel, reconnect=5)  # type: ignore
-    rel.signal(2, rel.abort)  # type: ignore
-    rel.dispatch()  # type: ignore
+    ws.run_forever(reconnect=5)  # type: ignore
