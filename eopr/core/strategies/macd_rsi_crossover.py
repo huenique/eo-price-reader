@@ -13,7 +13,7 @@ it can be a signal to buy or sell
 
 import pydantic
 
-from ..indicators import macd, rsi
+from eopr.core.indicators import macd, rsi
 
 
 class TradeSignal(pydantic.BaseModel):

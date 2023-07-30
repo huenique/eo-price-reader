@@ -2,8 +2,8 @@ import typing
 
 import pydantic
 
-from .. import errors
-from .common import CandlePrice, FloatArray, TrendAnalysis
+from eopr import errors
+from eopr.core.indicators.common import CandlePrice, FloatArray, TrendAnalysis
 
 RSIValues = FloatArray
 Interpretation = str
